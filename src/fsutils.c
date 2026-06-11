@@ -167,3 +167,40 @@ void changedir(lfs_t *lfs, const char* dir){
 
     printf("Current directory: %s\r\n", cwd);
 }
+
+void cat(lfs_t *lfs, const char *path){
+    struct lfs_info info;
+    lfs_file_t file;
+
+    int err = lfs_stat(lfs, path, &info);
+
+    if (err < 0) {
+        printf("cat: %s: No such file\r\n", path);
+        return;
+    }
+
+    if (info.type != LFS_TYPE_REG) {
+        printf("cat: %s: Not a regular file\r\n", path);
+        return;
+    }
+
+    err = lfs_file_open(lfs, &file, path, LFS_O_RDONLY);
+    if (err < 0) {
+        printf("cat: %s: Cannot open (err=%d)\r\n",
+               path, err);
+        return;
+    }
+
+    char buf[64];
+    lfs_ssize_t n;
+
+    while ((n = lfs_file_read(lfs, &file, buf, sizeof(buf))) > 0) {
+        fwrite(buf, 1, (size_t)n, stdout);
+    }
+
+    lfs_file_close(lfs, &file);
+
+    if (n < 0) {
+        printf("\r\ncat: Read error (%ld)\r\n", (long)n);
+    }
+}

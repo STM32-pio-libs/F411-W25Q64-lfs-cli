@@ -38,7 +38,13 @@ void runcmd(char* cmd, lfs_t *lfs){
         }
     }
     else if(strncmp(cmd, "cat", 3) == 0){
-        printf("cat command\n\r");
+        if(cmd2len == 0){
+            printf("Usage cat <dir>\n\r");
+        }
+        else{
+            pathjoin(newpath, getcwd(), cmd2);
+            cat(lfs, newpath);
+        }
     }
     else if(strncmp(cmd, "cd", 2) == 0){
         if(cmd2len == 0){
