@@ -46,6 +46,15 @@ void runcmd(char* cmd, lfs_t *lfs){
             cat(lfs, newpath);
         }
     }
+    else if(strncmp(cmd, "touch", 3) == 0){
+        if(cmd2len == 0){
+            printf("Usage touch <filename>\n\r");
+        }
+        else{
+            pathjoin(newpath, getcwd(), cmd2);
+            touch(lfs, newpath);
+        }
+    }
     else if(strncmp(cmd, "cd", 2) == 0){
         if(cmd2len == 0){
             printf("Usage cd <dir>\n\r");
@@ -104,6 +113,5 @@ int main(){
         fgets(s, sizeof(s), stdin);
         runcmd(s, &lfs);
     }
-
 }
 

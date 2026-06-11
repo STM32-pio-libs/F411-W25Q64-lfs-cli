@@ -204,3 +204,43 @@ void cat(lfs_t *lfs, const char *path){
         printf("\r\ncat: Read error (%ld)\r\n", (long)n);
     }
 }
+
+void touch(lfs_t *lfs, const char *path){
+    struct lfs_info info;
+    lfs_file_t file;
+
+    int err = lfs_stat(lfs, path, &info);
+
+    if (err == LFS_ERR_OK) {
+        if (info.type == LFS_TYPE_DIR) {
+            printf("touch: %s: Is a directory\r\n", path);
+            return;
+        }
+
+        printf("touch: %s already exists\r\n", path);
+        return;
+    }
+
+    err = lfs_file_open(lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT);
+
+    if (err < 0) {
+        printf("touch: cannot create %s (err=%d)\r\n",
+               path, err);
+        return;
+    }
+
+    char line[1000];
+    printf("Keep typing your text, when done type exact \"EOF\" on a new line\n\r\n\r");
+    int linecount = 0;
+    while(true){
+        fgets(line, sizeof(line), stdin);
+        if(strncmp(line, "EOF", 3) == 0) break;
+        lfs_file_write(lfs, &file, line, strlen(line));
+        linecount++;
+    }
+    printf("Written %d lines to new file %s\n", linecount);
+
+    lfs_file_close(lfs, &file);
+
+    printf("Created %s\r\n", path);
+}
