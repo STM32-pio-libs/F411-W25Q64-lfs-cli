@@ -5,3 +5,4 @@ void SystemClock_Config(void);
 void enable_gpio(void);
 void setup_hardfault_led(void);
 void setup_uart1();
+void setup_spi1(void);

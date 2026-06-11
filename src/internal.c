@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 extern UART_HandleTypeDef huart1;
+extern SPI_HandleTypeDef  spi1;
 
 void setup_hardfault_led(void){
     GPIO_InitTypeDef led_init = {.Pin = GPIO_PIN_13,
@@ -52,6 +53,34 @@ void setup_uart1(){
     if (HAL_UART_Init(&huart1) != HAL_OK){
         Error_Handler();
     }
+}
+
+void setup_spi1(void){
+    __HAL_RCC_SPI1_CLK_ENABLE();
+
+    /**SPI1 GPIO Configuration
+    PA5     ------> SPI1_SCK
+    PA6     ------> SPI1_MISO
+    PA7     ------> SPI1_MOSI
+    */
+
+    GPIO_InitTypeDef spi_pin = {
+        .Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7,
+        .Mode = GPIO_MODE_AF_PP, .Pull = GPIO_NOPULL,
+        .Speed = GPIO_SPEED_FREQ_VERY_HIGH, .Alternate = GPIO_AF5_SPI1
+    };
+    HAL_GPIO_Init(GPIOA, &spi_pin);
+ 
+    spi1.Instance = SPI1;
+    spi1.Init = (SPI_InitTypeDef){
+        .Mode = SPI_MODE_MASTER, .Direction = SPI_DIRECTION_2LINES,
+        .DataSize = SPI_DATASIZE_8BIT, .CLKPolarity = SPI_POLARITY_LOW,
+        .CLKPhase = SPI_PHASE_1EDGE, .NSS = SPI_NSS_SOFT,
+        .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16,
+        .FirstBit = SPI_FIRSTBIT_MSB, .TIMode = SPI_TIMODE_DISABLE,
+        .CRCCalculation = SPI_CRCCALCULATION_DISABLE, .CRCPolynomial = 7
+    };
+    if (HAL_SPI_Init(&spi1) != HAL_OK) { Error_Handler(); }
 }
 
 void Error_Handler(void){
