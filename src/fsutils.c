@@ -128,6 +128,42 @@ void makedir(lfs_t *lfs, const char *dirname){
     }
 }
 
+void pathjoin(char* buf, const char* a, const char* b){
+    strcpy(buf, a);
+    if(a[strlen(a)-1] != '/') strcat(buf, "/");
+    strcat(buf, b);
+}
+
 const char* getcwd(){
     return cwd;
+}
+
+void changedir(lfs_t *lfs, const char* dir){
+    if(strcmp(dir, ".") == 0) return;
+    if(strcmp(dir, "..") == 0){
+        int pos = strlen(cwd)-1;
+        while(pos>1 && cwd[pos] != '/') pos--;
+        cwd[pos] = '\0';
+        return;
+    }
+
+    char newpath[100];
+    struct lfs_info info;
+    pathjoin(newpath, cwd, dir);
+    int err = lfs_stat(lfs, newpath, &info);
+
+    if (err < 0) {
+        printf("cd: %s: No such file or directory\r\n", newpath);
+        return;
+    }
+
+    if (info.type != LFS_TYPE_DIR) {
+        printf("cd: %s: Not a directory\r\n", newpath);
+        return;
+    }
+
+    strncpy(cwd, newpath, sizeof(cwd) - 1);
+    cwd[sizeof(cwd) - 1] = '\0';
+
+    printf("Current directory: %s\r\n", cwd);
 }

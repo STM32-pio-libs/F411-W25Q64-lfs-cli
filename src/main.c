@@ -15,11 +15,7 @@ void print_help(){
     printf("  help [cmd]     Show help information\n\r");
 }
 
-void pathjoin(char* buf, const char* a, const char* b){
-    strcpy(buf, a);
-    if(a[0] != '/') strcat(buf, "/");
-    strcat(buf, b);
-}
+
 
 void runcmd(char* cmd, lfs_t *lfs){
     int pos = 0;
@@ -33,13 +29,24 @@ void runcmd(char* cmd, lfs_t *lfs){
     char newpath[100];
 
     if(strncmp(cmd, "ls", 2) == 0){
-        listdir(lfs, getcwd());
+        if(cmd2len == 0){
+            listdir(lfs, getcwd());
+        }
+        else{
+            pathjoin(newpath, getcwd(), cmd2);
+            listdir(lfs, newpath);
+        }
     }
     else if(strncmp(cmd, "cat", 3) == 0){
         printf("cat command\n\r");
     }
     else if(strncmp(cmd, "cd", 2) == 0){
-        printf("cd command\n\r");
+        if(cmd2len == 0){
+            printf("Usage cd <dir>\n\r");
+        }
+        else{
+            changedir(lfs, cmd2);
+        }
     }
     else if(strncmp(cmd, "pwd", 2) == 0){
         printf("CWD: %s\n\r", getcwd());
