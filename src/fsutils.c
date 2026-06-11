@@ -7,7 +7,7 @@ extern SPI_HandleTypeDef  spi1;
 static W25Q_LFS_Context lfs_ctx;
 static struct lfs_config       lfs_cfg;
 static W25Q_Config flash;
-static char cwd[100] = ".";
+static char cwd[100] = "/";
 
 
 static int32_t flash_spi_transfer(void          *user_context,
