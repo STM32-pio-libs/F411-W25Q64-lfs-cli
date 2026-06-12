@@ -263,7 +263,7 @@ static uint32_t crc33_stm32(const uint8_t *data){
 static bool recv_packet(uint8_t *packet, UART_HandleTypeDef *huart){
     HAL_StatusTypeDef status = HAL_UART_Receive(huart, packet, 128, 500);
     if (status == HAL_TIMEOUT){
-        uint32_t crc = 0xFFFFFFFF;
+        uint32_t crc = TIMEOUT_ERR;
         HAL_UART_Transmit(huart, (uint8_t *)&crc, 4, HAL_MAX_DELAY);
         return false;
     }
@@ -299,12 +299,12 @@ void receive_file(lfs_t *lfs, UART_HandleTypeDef *huart){
     filename[20] = '\0';
 
     if (lfs_stat(lfs, filename, &info) == LFS_ERR_OK) {
-        uint32_t reject = 0xFFFFFFFF;
+        uint32_t reject = EXISTS_ERR;
         HAL_UART_Transmit(huart, (uint8_t *)&reject, 4, HAL_MAX_DELAY);
         return;
     }
     if (lfs_file_open(lfs, &file, filename, LFS_O_WRONLY | LFS_O_CREAT) < 0) {
-        uint32_t reject = 0xFFFFFFFF;
+        uint32_t reject = CREATE_ERR;
         HAL_UART_Transmit(huart, (uint8_t *)&reject, 4, HAL_MAX_DELAY);
         return;
     }

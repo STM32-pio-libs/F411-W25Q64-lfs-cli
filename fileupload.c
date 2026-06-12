@@ -7,10 +7,16 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <sys/stat.h>
+#define DEBUG   1
+
+enum FIO_ERR{
+    TIMEOUT_ERR = 0xF1F1F1F1,
+    EXISTS_ERR = 0xF2F2F2F2,
+    CREATE_ERR = 0xF3F3F3F3,
+};
 
 static uint8_t our_xor = 0;
 static uint32_t packet_count = 0;
-static uint32_t mismatch_count = 0;
 
 int open_serial(const char *port, int baud){
     int fd = open(port, O_RDWR | O_NOCTTY | O_SYNC);
@@ -130,21 +136,28 @@ static bool send_packet(uint8_t *packet, int fd){
     write_all(fd, (uint8_t *)packet, 128);
     read_all(fd, (uint8_t *)&board_crc, 4);
     our_crc = crc33_stm32(packet, 128+4);
-    if(board_crc == our_crc){
+    if(DEBUG){
         printf("SENT PACKET %ld: ", packet_count);
         dump_buf(packet, 128+4);
         printf("Board CRC : 0x%08X\n", board_crc);
         printf("Our CRC   : 0x%08X\n", our_crc);
-        printf("Match     : YES\n");
     }
-    else{
-        printf("SENT PACKET %ld: ", packet_count);
-        dump_buf(packet, 128+4);
-        printf("Board CRC : 0x%08X\n", board_crc);
-        printf("Our CRC   : 0x%08X\n", our_crc);
-        printf("Match     : NO\n");
-        mismatch_count++;
+    if(board_crc != our_crc){
+        if(board_crc == TIMEOUT_ERR){
+            printf("\nTerminated due to timeout!");
+        }
+        else if(board_crc == EXISTS_ERR){
+            printf("\nTerminated due to file exists!");
+        }
+        else if(board_crc == CREATE_ERR){
+            printf("\nTerminated due to coundnt crate file!");
+        }
+        else{
+            printf("\nTerminated due to integrity mismatch, maybe retry!");
+        }
+        return false;
     }
+    return true;
 }
 
 void initiate_coms(int fd){
@@ -200,15 +213,14 @@ int main(void){
     uint32_t *words = (uint32_t*)packet;
     words[0] = getFileSize(filename);
     sprintf(packet+4, "%s", filename);
-    send_packet(packet, ufd);
+    if(!send_packet(packet, ufd)) return 1;
 
     ssize_t n;
     while ((n = read(ffd, packet, 128)) > 0) {
-        send_packet(packet, ufd);
+        if(!send_packet(packet, ufd)) return 1;
     }
 
     close(ufd);
     close(ffd);
-    printf("Report %ld mismatch out of %ld packets\n", mismatch_count, packet_count);
     return 0;
 }

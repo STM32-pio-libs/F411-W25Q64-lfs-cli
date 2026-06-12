@@ -4,6 +4,12 @@
 #include "w25q64.h"
 #include "w25q64_lfs.h"
 
+enum FIO_ERR{
+    TIMEOUT_ERR = 0xF1F1F1F1,
+    EXISTS_ERR = 0xF2F2F2F2,
+    CREATE_ERR = 0xF3F3F3F3,
+};
+
 lfs_t setup_lfs();
 const char* getcwd();
 void listdir(lfs_t *lfs, const char* dir);
