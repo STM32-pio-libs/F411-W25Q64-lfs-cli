@@ -8,6 +8,7 @@ static W25Q_LFS_Context lfs_ctx;
 static struct lfs_config       lfs_cfg;
 static W25Q_Config flash;
 static char cwd[100] = "/";
+static uint8_t data_xor;
 
 
 static int32_t flash_spi_transfer(void          *user_context,
@@ -255,20 +256,30 @@ static uint32_t crc32_stm32(const uint8_t *data){
     return crc;
 }
 
-void receive_file(UART_HandleTypeDef *huart1){
+static void xor_data(const uint8_t *data){
+    for(int i=0; i<128; i++){
+        data_xor ^= data[i];
+    }
+}
+
+static bool recv_packet(uint8_t *packet, UART_HandleTypeDef *huart){
+    HAL_UART_Receive(huart, packet, 128, HAL_MAX_DELAY);
+    uint32_t crc = crc32_stm32(packet);
+    xor_data(packet);
+    HAL_UART_Transmit(huart, (uint8_t *)&crc, 4, HAL_MAX_DELAY);
+    HAL_UART_Transmit(huart, &data_xor, 1, HAL_MAX_DELAY);
+}
+
+void receive_file(UART_HandleTypeDef *huart){
     __HAL_RCC_CRC_CLK_ENABLE();
+    data_xor = 0;
+
     printf("Receiving files\n\r");
     uint8_t start_pattern[4] = {0x95, 0x54, 0x95, 0x54};
-    HAL_UART_Transmit(huart1, (uint8_t *)start_pattern, 4, HAL_MAX_DELAY);
+    HAL_UART_Transmit(huart, (uint8_t *)start_pattern, 4, HAL_MAX_DELAY);
 
     uint8_t packet[128];
-    HAL_UART_Receive(huart1, packet, 128, HAL_MAX_DELAY);
-    uint32_t crc = crc32_stm32(packet);
-    HAL_UART_Transmit(huart1, (uint8_t *)&crc, 4, HAL_MAX_DELAY);
-
-    char c;
     while(1){
-        HAL_UART_Receive(huart1, &c, 1, HAL_MAX_DELAY);
-        HAL_UART_Transmit(huart1, &c, 1, HAL_MAX_DELAY);
+        recv_packet(packet, huart);
     }
 }

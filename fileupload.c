@@ -1,10 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <termios.h>
+
+static uint8_t our_xor = 0;
+static uint32_t packet_count = 0;
+
 
 int open_serial(const char *port, int baud){
     int fd = open(port, O_RDWR | O_NOCTTY | O_SYNC);
@@ -74,8 +79,7 @@ void dump_buf(uint8_t buf[], ssize_t size){
     printf("]\n");
 }
 
-static uint32_t crc32_stm32(const uint8_t *data, size_t len)
-{
+static uint32_t crc32_stm32(const uint8_t *data, size_t len){
     uint32_t crc = 0xFFFFFFFF;
 
     for (size_t i = 0; i < len; i += 4) {
@@ -97,16 +101,32 @@ static uint32_t crc32_stm32(const uint8_t *data, size_t len)
     return crc;
 }
 
-int main(void){
-    setvbuf(stdout, NULL, _IONBF, 0);
-    char *port = "/dev/ttyACM0";
-    int fd = open_serial(port, B115200);
-    if (fd < 0) return 1;
+static void xor_data(const uint8_t *data){
+    for(int i=0; i<128; i++){
+        our_xor ^= data[i];
+    }
+}
 
-    printf("Connected to: %s\n", port);
+static bool send_packet(uint8_t *packet, int fd){
+    packet_count++;
+    uint32_t board_crc, our_crc;
+    uint8_t board_xor = 0; our_xor;
+    write_all(fd, (uint8_t *)packet, 128);
+    printf("SENT PACKET %ld: ", packet_count);
+    dump_buf(packet, 128);
+    read_all(fd, (uint8_t *)&board_crc, 4);
+    read_all(fd, &board_xor, 1);
+    our_crc = crc32_stm32(packet, 128);
+    xor_data(packet);
+    printf("Board CRC : 0x%08X\n", board_crc);
+    printf("Our CRC   : 0x%08X\n", our_crc);
+    printf("Match     : %s\n", board_crc == our_crc ? "YES" : "NO");
+    printf("Board XOR : 0x%02X\n", board_xor);
+    printf("Our XOR   : 0x%02X\n", our_xor);
+    printf("Match     : %s\n", board_xor == our_xor ? "YES" : "NO");
+}
 
-    tcflush(fd, TCIFLUSH);
-
+void initiate_coms(int fd){
     /* Send the command */
     write_all_slow(fd, "\n\n\n", 3);
     tcdrain(fd);
@@ -127,28 +147,36 @@ int main(void){
         if (window[0]==0x95 && window[1]==0x54 && 
             window[2]==0x95 && window[3]==0x54) break;
     }
+    tcflush(fd, TCIFLUSH);
+}
 
-    uint8_t buf[128] = {0};
-    uint32_t board_crc, our_crc;
-    strcpy(buf, "myfile.txt");
-    write_all(fd, (uint8_t *)buf, 128);
-    printf("SENT: ");
-    dump_buf(buf, 128);
-    read_all(fd, (uint8_t *)&board_crc, 4);
-    our_crc = crc32_stm32(buf, 128);
-    printf("Board CRC : 0x%08X\n", board_crc);
-    printf("Our CRC   : 0x%08X\n", our_crc);
-    printf("Match     : %s\n", board_crc == our_crc ? "YES" : "NO");
+int main(void){
+    setvbuf(stdout, NULL, _IONBF, 0);
+    char *port = "/dev/ttyACM0";
+    int ufd = open_serial(port, B115200);
+    if (ufd < 0) return 1;
+    printf("Connected to: %s\n", port);
 
+    initiate_coms(ufd);
+    printf("Sending packets: %s\n", port);
 
-    /* Now read the actual response lines until we see the prompt */
-    uint8_t c;
-    while (1) {
-        read(fd, &c, 1);
-        printf("DBG: [%02x]\n", c);
+    char* filename = "file.tar.gz";
+    int ffd = open(filename, O_RDONLY);
+    if (ffd < 0) {
+        perror("open");
+        return 1;
     }
 
+    uint8_t packet[128] = {0};
+    sprintf(packet, "%s", filename);
+    send_packet(packet, ufd);
 
-    close(fd);
+    ssize_t n;
+    while ((n = read(ffd, packet, 128)) > 0) {
+        send_packet(packet, ufd);
+    }
+
+    close(ufd);
+    close(ffd);
     return 0;
 }
