@@ -12,5 +12,7 @@ void pathjoin(char* buf, const char* a, const char* b);
 void changedir(lfs_t *lfs, const char* dir);
 void cat(lfs_t *lfs, const char *path);
 void touch(lfs_t *lfs, const char *path);
+void receive_file(UART_HandleTypeDef *huart1);
+
 
 #endif //__FSUTILS_H__

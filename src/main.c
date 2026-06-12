@@ -18,6 +18,8 @@ void print_help(){
 
 
 void runcmd(char* cmd, lfs_t *lfs){
+    if(cmd[0] == '\0' || cmd[0] == '\n')return;
+
     int pos = 0;
     int len = strlen(cmd);
     while(pos < len && cmd[pos] != ' '&& cmd[pos] != '\n' && cmd[pos] != '\r'){pos++;}
@@ -78,8 +80,11 @@ void runcmd(char* cmd, lfs_t *lfs){
     else if(strncmp(cmd, "help", 2) == 0){
         print_help();
     }
+    else if(strncmp(cmd, "receive", 7) == 0){
+        receive_file(&huart1);
+    }
     else{
-        printf("Unknown command! run \"help\"\n\r");
+        printf("Unknown command \"%s\"! run \"help\"\n\r", cmd);
     }
 }
 

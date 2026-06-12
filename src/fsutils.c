@@ -244,3 +244,31 @@ void touch(lfs_t *lfs, const char *path){
 
     printf("Created %s\r\n", path);
 }
+
+static uint32_t crc32_stm32(const uint8_t *data){
+    CRC->CR = CRC_CR_RESET;
+    uint32_t *words = (uint32_t *)data;
+    for (int i = 0; i < 32; i++) {
+        CRC->DR = words[i];
+    }
+    uint32_t crc = CRC->DR;
+    return crc;
+}
+
+void receive_file(UART_HandleTypeDef *huart1){
+    __HAL_RCC_CRC_CLK_ENABLE();
+    printf("Receiving files\n\r");
+    uint8_t start_pattern[4] = {0x95, 0x54, 0x95, 0x54};
+    HAL_UART_Transmit(huart1, (uint8_t *)start_pattern, 4, HAL_MAX_DELAY);
+
+    uint8_t packet[128];
+    HAL_UART_Receive(huart1, packet, 128, HAL_MAX_DELAY);
+    uint32_t crc = crc32_stm32(packet);
+    HAL_UART_Transmit(huart1, (uint8_t *)&crc, 4, HAL_MAX_DELAY);
+
+    char c;
+    while(1){
+        HAL_UART_Receive(huart1, &c, 1, HAL_MAX_DELAY);
+        HAL_UART_Transmit(huart1, &c, 1, HAL_MAX_DELAY);
+    }
+}
