@@ -131,11 +131,11 @@ static bool send_packet(uint8_t *packet, int fd){
     read_all(fd, (uint8_t *)&board_crc, 4);
     our_crc = crc33_stm32(packet, 128+4);
     if(board_crc == our_crc){
-        // printf("SENT PACKET %ld: ", packet_count);
-        // dump_buf(packet, 128+4);
-        // printf("Board CRC : 0x%08X\n", board_crc);
-        // printf("Our CRC   : 0x%08X\n", our_crc);
-        // printf("Match     : YES\n");
+        printf("SENT PACKET %ld: ", packet_count);
+        dump_buf(packet, 128+4);
+        printf("Board CRC : 0x%08X\n", board_crc);
+        printf("Our CRC   : 0x%08X\n", our_crc);
+        printf("Match     : YES\n");
     }
     else{
         printf("SENT PACKET %ld: ", packet_count);

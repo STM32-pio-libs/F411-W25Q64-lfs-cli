@@ -259,11 +259,14 @@ static uint32_t crc33_stm32(const uint8_t *data){
 
 static bool recv_packet(uint8_t *packet, UART_HandleTypeDef *huart){
     packet_count++;
-    HAL_UART_Receive(huart, packet, 128, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status = HAL_UART_Receive(huart, packet, 128, 500);
+    if (status == HAL_TIMEOUT) return false;
+
     uint32_t *words = (uint32_t *)packet;
     words[32] = packet_count; 
     uint32_t crc = crc33_stm32(packet);
     HAL_UART_Transmit(huart, (uint8_t *)&crc, 4, HAL_MAX_DELAY);
+    return true;
 }
 
 void receive_file(UART_HandleTypeDef *huart){
@@ -275,7 +278,5 @@ void receive_file(UART_HandleTypeDef *huart){
     HAL_UART_Transmit(huart, (uint8_t *)start_pattern, 4, HAL_MAX_DELAY);
 
     uint8_t packet[128+4];
-    while(1){
-        recv_packet(packet, huart);
-    }
+    while(recv_packet(packet, huart));
 }
