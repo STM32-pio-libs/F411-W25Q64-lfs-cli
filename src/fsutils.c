@@ -249,6 +249,43 @@ void touch(lfs_t *lfs, const char *path){
     printf("Created %s\r\n", path);
 }
 
+int rm_recursive(lfs_t *lfs, const char *path){
+    struct lfs_info info;
+
+    int err = lfs_stat(lfs, path, &info);
+    if (err < 0)
+        return err;
+
+    if (info.type == LFS_TYPE_REG) {
+        return lfs_remove(lfs, path);
+    }
+
+    lfs_dir_t dir;
+    err = lfs_dir_open(lfs, &dir, path);
+    if (err < 0)
+        return err;
+
+    struct lfs_info child;
+    char childpath[512];
+
+    while (lfs_dir_read(lfs, &dir, &child) > 0) {
+        if (!strcmp(child.name, ".") || !strcmp(child.name, ".."))
+            continue;
+
+        snprintf(childpath, sizeof(childpath), "%s/%s", path, child.name);
+
+        err = rm_recursive(lfs, childpath);
+        if (err < 0) {
+            lfs_dir_close(lfs, &dir);
+            return err;
+        }
+    }
+
+    lfs_dir_close(lfs, &dir);
+
+    return lfs_remove(lfs, path);
+}
+
 void diskinfo(lfs_t *lfs){
     lfs_ssize_t used_blocks = lfs_fs_size(lfs);
 

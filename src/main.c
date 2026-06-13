@@ -65,6 +65,14 @@ void runcmd(char* cmd, lfs_t *lfs){
             changedir(lfs, cmd2);
         }
     }
+    else if(strncmp(cmd, "rm", 2) == 0){
+        if(cmd2len == 0){
+            printf("Usage rm <dir/file>\n\r");
+        }
+        else{
+            rm_recursive(lfs, cmd2);
+        }
+    }
     else if(strncmp(cmd, "pwd", 2) == 0){
         printf("CWD: %s\n\r", getcwd());
     }

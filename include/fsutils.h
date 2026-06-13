@@ -19,6 +19,7 @@ void changedir(lfs_t *lfs, const char* dir);
 void cat(lfs_t *lfs, const char *path);
 void touch(lfs_t *lfs, const char *path);
 void diskinfo(lfs_t *lfs);
+int rm_recursive(lfs_t *lfs, const char *path);
 void receive_file(lfs_t *lfs, UART_HandleTypeDef *huart1);
 
 
