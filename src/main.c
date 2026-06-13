@@ -77,8 +77,11 @@ void runcmd(char* cmd, lfs_t *lfs){
             makedir(lfs, newpath);
         }
     }
-    else if(strncmp(cmd, "help", 2) == 0){
+    else if(strncmp(cmd, "help", 4) == 0){
         print_help();
+    }
+    else if(strncmp(cmd, "info", 4) == 0){
+        diskinfo(lfs);
     }
     else if(strncmp(cmd, "receive", 7) == 0){
         receive_file(lfs, &huart1);

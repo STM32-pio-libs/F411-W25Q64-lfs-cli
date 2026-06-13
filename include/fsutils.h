@@ -18,6 +18,7 @@ void pathjoin(char* buf, const char* a, const char* b);
 void changedir(lfs_t *lfs, const char* dir);
 void cat(lfs_t *lfs, const char *path);
 void touch(lfs_t *lfs, const char *path);
+void diskinfo(lfs_t *lfs);
 void receive_file(lfs_t *lfs, UART_HandleTypeDef *huart1);
 
 

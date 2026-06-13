@@ -249,6 +249,33 @@ void touch(lfs_t *lfs, const char *path){
     printf("Created %s\r\n", path);
 }
 
+void diskinfo(lfs_t *lfs){
+    lfs_ssize_t used_blocks = lfs_fs_size(lfs);
+
+    if (used_blocks < 0) {
+        printf("Failed to get filesystem size (err=%ld)\r\n",
+               (long)used_blocks);
+        return;
+    }
+
+    uint32_t total_blocks = lfs_cfg.block_count;
+    uint32_t block_size   = lfs_cfg.block_size;
+
+    uint32_t used_bytes  = used_blocks * block_size;
+    uint32_t total_bytes = total_blocks * block_size;
+    uint32_t free_bytes  = total_bytes - used_bytes;
+
+    printf("Filesystem information\r\n");
+    printf("----------------------\r\n");
+    printf("Block size   : %lu bytes\r\n", block_size);
+    printf("Total blocks : %lu\r\n", total_blocks);
+    printf("Used blocks  : %ld\r\n", used_blocks);
+    printf("Free blocks  : %lu\r\n", total_blocks - used_blocks);
+    printf("Total size   : %lu bytes\r\n", total_bytes);
+    printf("Used size    : %lu bytes\r\n", used_bytes);
+    printf("Free size    : %lu bytes\r\n", free_bytes);
+}
+
 static uint32_t crc33_stm32(const uint8_t *data){
     CRC->CR = CRC_CR_RESET;
     uint32_t *words = (uint32_t *)data;
