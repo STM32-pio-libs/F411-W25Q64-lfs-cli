@@ -105,7 +105,10 @@ void listdir(lfs_t *lfs, const char* dirname){
     lfs_dir_t dir;
     struct lfs_info info;
 
-    lfs_dir_open(lfs, &dir, dirname);
+    if(lfs_dir_open(lfs, &dir, dirname)!=0){
+        printf("Unable to open dir %s\n\r", dirname);
+        return;
+    }
 
     while (lfs_dir_read(lfs, &dir, &info) > 0) {
         if(strcmp(info.name, ".") == 0 || strcmp(info.name, "..") == 0) continue;
@@ -148,6 +151,11 @@ void changedir(lfs_t *lfs, const char* dir){
         int pos = strlen(cwd)-1;
         while(pos>1 && cwd[pos] != '/') pos--;
         cwd[pos] = '\0';
+        return;
+    }
+
+    if(strcmp(dir, "/") == 0){
+        strcpy(cwd, "/");
         return;
     }
 
@@ -247,6 +255,42 @@ void touch(lfs_t *lfs, const char *path){
     lfs_file_close(lfs, &file);
 
     printf("Created %s\r\n", path);
+}
+
+void lsr_print_callback(const char* path){
+    printf("%s\n\r", path);
+}
+
+void ls_recursive(lfs_t *lfs, const char *path, void(*callback)(const char*)){
+    struct lfs_info info;
+
+    lfs_dir_t dir;
+
+    if(lfs_dir_open(lfs, &dir, path)){
+        printf("Unable to open dir %s\n\r", path);
+        return;
+    }
+
+    struct lfs_info child;
+    char childpath[512];
+
+    while (lfs_dir_read(lfs, &dir, &child) > 0) {
+        if (!strcmp(child.name, ".") || !strcmp(child.name, ".."))
+            continue;
+
+        if (strcmp(path, "/") == 0)
+            snprintf(childpath, sizeof(childpath), "/%s", child.name);
+        else
+            snprintf(childpath, sizeof(childpath), "%s/%s", path, child.name);
+        if(child.type == LFS_TYPE_REG){
+            callback(childpath);
+        }
+        else if(child.type == LFS_TYPE_DIR){
+            ls_recursive(lfs, childpath, callback);
+        }
+    }
+
+    lfs_dir_close(lfs, &dir);
 }
 
 int rm_recursive(lfs_t *lfs, const char *path){

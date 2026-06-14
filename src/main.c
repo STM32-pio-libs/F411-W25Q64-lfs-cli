@@ -30,7 +30,16 @@ void runcmd(char* cmd, lfs_t *lfs){
     int cmd2len = strlen(cmd2);
     static char newpath[500];
 
-    if(strncmp(cmd, "ls", 2) == 0){
+    if(strncmp(cmd, "lsr", 3) == 0){
+        if(cmd2len == 0){
+            ls_recursive(lfs, getcwd(), lsr_print_callback);
+        }
+        else{
+            pathjoin(newpath, getcwd(), cmd2);
+            ls_recursive(lfs, newpath, lsr_print_callback);
+        }
+    }
+    else if(strncmp(cmd, "ls", 2) == 0){
         if(cmd2len == 0){
             listdir(lfs, getcwd());
         }
@@ -59,7 +68,7 @@ void runcmd(char* cmd, lfs_t *lfs){
     }
     else if(strncmp(cmd, "cd", 2) == 0){
         if(cmd2len == 0){
-            printf("Usage cd <dir>\n\r");
+            changedir(lfs, "/");
         }
         else{
             changedir(lfs, cmd2);
